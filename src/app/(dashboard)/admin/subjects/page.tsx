@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/lib/use-profile";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ export default function AdminSubjectsPage() {
     curriculum_type: "both",
   });
   const supabase = createClient();
+  const { schoolId } = useProfile();
 
   async function loadSubjects() {
     const { data } = await supabase
@@ -47,13 +49,12 @@ export default function AdminSubjectsPage() {
 
   const handleCreate = async () => {
     if (!newSubject.name) return;
-    const { data: profile } = await supabase.from("profiles").select("school_id").single();
     await supabase.from("subjects").insert({
       name: newSubject.name,
       code: newSubject.code || null,
       category: newSubject.category,
       curriculum_type: newSubject.curriculum_type,
-      school_id: profile?.school_id,
+      school_id: schoolId,
     });
     setNewSubject({ name: "", code: "", category: "academic", curriculum_type: "both" });
     setShowForm(false);

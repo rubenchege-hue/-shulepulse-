@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/lib/use-profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -45,8 +46,7 @@ const templateColors: Record<string, "primary" | "secondary" | "purple"> = {
 
 export default function TeacherReportsPage() {
   const supabase = createClient();
-  const [profileId, setProfileId] = useState<string | null>(null);
-  const [schoolId, setSchoolId] = useState<string | null>(null);
+  const { profile, schoolId, userId } = useProfile();
   const [reports, setReports] = useState<ReportWithDetails[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [terms, setTerms] = useState<AcademicTerm[]>([]);
@@ -66,7 +66,8 @@ export default function TeacherReportsPage() {
   const [genTermId, setGenTermId] = useState("");
   const [genTemplate, setGenTemplate] = useState("combined");
 
-  async function loadReports(pid: string, schoolId: string) {
+  async function loadReports(pid: string) {
+    if (!schoolId) return;
     const { data } = await supabase
       .from("reports")
       .select(`
@@ -101,23 +102,12 @@ export default function TeacherReportsPage() {
   }
 
   useEffect(() => {
-    async function init() {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("id, school_id")
-        .single();
-
-      if (!profile?.school_id) {
-        setLoading(false);
-        return;
-      }
-
-      setProfileId(profile.id);
-      setSchoolId(profile.school_id);
-      loadReports(profile.id, profile.school_id);
+    if (userId && schoolId) {
+      loadReports(userId);
+    } else if (!schoolId) {
+      setLoading(false);
     }
-    init();
-  }, [supabase]);
+  }, [userId, schoolId, supabase]);
 
   const filtered = reports.filter((r) => {
     const studentName =
@@ -142,7 +132,7 @@ export default function TeacherReportsPage() {
     const { error: err } = await supabase.from("reports").insert({
       student_id: genStudentId,
       academic_term_id: genTermId,
-      generated_by: profileId,
+      generated_by: userId,
       template_type: genTemplate,
       status: "draft",
       content: {} as Record<string, unknown>,
@@ -165,7 +155,7 @@ export default function TeacherReportsPage() {
     setGenerating(false);
 
     // Reload
-    if (profileId && schoolId) loadReports(profileId, schoolId);
+    if (userId) loadReports(userId);
   };
 
   const handleDelete = async (reportId: string) => {
@@ -173,7 +163,7 @@ export default function TeacherReportsPage() {
       return;
     await supabase.from("reports").delete().eq("id", reportId);
     // Reload
-    if (profileId && schoolId) loadReports(profileId, schoolId);
+    if (userId) loadReports(userId);
   };
 
   const handlePublish = async (reportId: string) => {
@@ -182,7 +172,7 @@ export default function TeacherReportsPage() {
       .update({ status: "published" })
       .eq("id", reportId);
 
-    if (profileId && schoolId) loadReports(profileId, schoolId);
+    if (userId) loadReports(userId);
   };
 
   const [generatingContent, setGeneratingContent] = useState<Set<string>>(new Set());
@@ -202,8 +192,8 @@ export default function TeacherReportsPage() {
         .update({ content: content as unknown as Record<string, unknown> })
         .eq("id", reportId);
 
-      if (!err && profileId && schoolId) {
-        loadReports(profileId, schoolId);
+      if (!err && userId) {
+        loadReports(userId);
       }
     } catch {
       // Silently handle

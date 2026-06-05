@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/lib/use-profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -14,6 +15,7 @@ import type { Class } from "@/lib/types/database";
 export default function NewStudentPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { schoolId } = useProfile();
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,10 +43,11 @@ export default function NewStudentPage() {
     setLoading(true);
     setError(null);
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("school_id")
-      .single();
+    if (!schoolId) {
+      setError("Could not determine your school. Please log in again.");
+      setLoading(false);
+      return;
+    }
 
     const { error: err } = await supabase.from("students").insert({
       first_name: form.first_name,
@@ -53,7 +56,7 @@ export default function NewStudentPage() {
       date_of_birth: form.date_of_birth || null,
       gender: form.gender || null,
       class_id: form.class_id || null,
-      school_id: profile?.school_id,
+      school_id: schoolId,
       status: "active",
     });
 

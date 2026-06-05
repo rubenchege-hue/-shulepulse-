@@ -19,3 +19,46 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* ====== Print styles for PDF export ====== */
+@media print {
+  @page {
+    size: A4;
+    margin: 15mm 12mm;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Prevent page breaks inside report sections */
+  .report-section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Allow tables to break across pages if needed */
+  table {
+    break-inside: auto;
+    page-break-inside: auto;
+  }
+
+  tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Override dark mode background for print */
+  [class*="dark"] body,
+  body {
+    background: white !important;
+  }
+
+  [class*="dark"] .text-zinc-900,
+  [class*="dark"] .text-white {
+    color: black !important;
+  }
+}

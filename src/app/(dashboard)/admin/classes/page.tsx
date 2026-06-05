@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/lib/use-profile";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ export default function AdminClassesPage() {
   const [showForm, setShowForm] = useState(false);
   const [newClass, setNewClass] = useState({ name: "", section: "", curriculum_type: "cbc", capacity: 45 });
   const supabase = createClient();
+  const { schoolId } = useProfile();
 
   async function loadClasses() {
     const { data } = await supabase.from("classes").select("*").order("name");
@@ -41,13 +43,12 @@ export default function AdminClassesPage() {
 
   const handleCreate = async () => {
     if (!newClass.name) return;
-    const { data: profile } = await supabase.from("profiles").select("school_id").single();
     await supabase.from("classes").insert({
       name: newClass.name,
       section: newClass.section || null,
       curriculum_type: newClass.curriculum_type,
       capacity: newClass.capacity,
-      school_id: profile?.school_id,
+      school_id: schoolId,
     });
     setNewClass({ name: "", section: "", curriculum_type: "cbc", capacity: 45 });
     setShowForm(false);

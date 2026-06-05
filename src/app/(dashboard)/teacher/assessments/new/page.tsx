@@ -4,16 +4,18 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/lib/use-profile";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, ArrowLeft, Plus, X } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 import type { Class, Subject, AcademicTerm } from "@/lib/types/database";
 
 export default function NewAssessmentPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { profile, schoolId } = useProfile();
   const [classes, setClasses] = useState<Class[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [terms, setTerms] = useState<AcademicTerm[]>([]);
@@ -30,14 +32,13 @@ export default function NewAssessmentPage() {
   });
 
   useEffect(() => {
-    async function load() {
-      const { data: profile } = await supabase.from("profiles").select("school_id").single();
-      if (!profile?.school_id) return;
+    if (!schoolId) return;
 
+    async function load() {
       const [classesRes, subjectsRes, termsRes] = await Promise.all([
-        supabase.from("classes").select("*").eq("school_id", profile.school_id).order("name"),
-        supabase.from("subjects").select("*").eq("school_id", profile.school_id).eq("category", "academic").order("name"),
-        supabase.from("academic_terms").select("*").eq("school_id", profile.school_id).order("academic_year", { ascending: false }),
+        supabase.from("classes").select("*").eq("school_id", schoolId).order("name"),
+        supabase.from("subjects").select("*").eq("school_id", schoolId).eq("category", "academic").order("name"),
+        supabase.from("academic_terms").select("*").eq("school_id", schoolId).order("academic_year", { ascending: false }),
       ]);
 
       if (classesRes.data) setClasses(classesRes.data);
@@ -45,22 +46,21 @@ export default function NewAssessmentPage() {
       if (termsRes.data) setTerms(termsRes.data);
     }
     load();
-  }, [supabase]);
+  }, [schoolId, supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
-    const { data: profile } = await supabase.from("profiles").select("id, school_id").single();
-    if (!profile) {
-      setError("Profile not found");
+    if (!profile || !schoolId) {
+      setError("Profile not found. Please log in again.");
       setLoading(false);
       return;
     }
 
     const { error: err } = await supabase.from("assessments").insert({
-      school_id: profile.school_id,
+      school_id: schoolId,
       class_id: form.class_id || null,
       subject_id: form.subject_id || null,
       academic_term_id: form.academic_term_id || null,

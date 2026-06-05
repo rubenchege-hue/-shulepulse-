@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/lib/use-profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
@@ -28,6 +29,7 @@ const levelColors: Record<string, "danger" | "warning" | "default" | "primary" |
 
 export default function TeacherCocurricularPage() {
   const supabase = createClient();
+  const { schoolId, userId } = useProfile();
   const [students, setStudents] = useState<any[]>([]);
   const [activities, setActivities] = useState<any[]>([]);
   const [terms, setTerms] = useState<any[]>([]);
@@ -44,14 +46,13 @@ export default function TeacherCocurricularPage() {
   const [savedRecords, setSavedRecords] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    async function load() {
-      const { data: profile } = await supabase.from("profiles").select("school_id").single();
-      if (!profile?.school_id) { setLoading(false); return; }
+    if (!schoolId) { setLoading(false); return; }
 
+    async function load() {
       const [studentsRes, activitiesRes, termsRes] = await Promise.all([
-        supabase.from("students").select("id, first_name, last_name, admission_number").eq("school_id", profile.school_id).eq("status", "active").order("first_name"),
-        supabase.from("co_curricular_activities").select("*").eq("school_id", profile.school_id).eq("is_active", true).order("name"),
-        supabase.from("academic_terms").select("*").eq("school_id", profile.school_id).order("academic_year", { ascending: false }),
+        supabase.from("students").select("id, first_name, last_name, admission_number").eq("school_id", schoolId).eq("status", "active").order("first_name"),
+        supabase.from("co_curricular_activities").select("*").eq("school_id", schoolId).eq("is_active", true).order("name"),
+        supabase.from("academic_terms").select("*").eq("school_id", schoolId).order("academic_year", { ascending: false }),
       ]);
 
       if (studentsRes.data) setStudents(studentsRes.data);
@@ -65,7 +66,7 @@ export default function TeacherCocurricularPage() {
       setLoading(false);
     }
     load();
-  }, [supabase]);
+  }, [schoolId, supabase]);
 
   const handleLoadExisting = async () => {
     if (!selectedActivity || !selectedTerm) return;
@@ -98,13 +99,12 @@ export default function TeacherCocurricularPage() {
 
   const handleCreateActivity = async () => {
     if (!newActivityName) return;
-    const { data: profile } = await supabase.from("profiles").select("school_id").single();
-    if (!profile?.school_id) return;
+    if (!schoolId) return;
 
     await supabase.from("co_curricular_activities").insert({
       name: newActivityName,
       category: newActivityCategory,
-      school_id: profile.school_id,
+      school_id: schoolId,
     });
 
     setNewActivityName("");
@@ -114,7 +114,7 @@ export default function TeacherCocurricularPage() {
     const { data } = await supabase
       .from("co_curricular_activities")
       .select("*")
-      .eq("school_id", profile.school_id)
+      .eq("school_id", schoolId)
       .eq("is_active", true)
       .order("name");
     if (data) setActivities(data);
@@ -124,8 +124,6 @@ export default function TeacherCocurricularPage() {
     if (!selectedActivity || !selectedTerm) return;
     setSaving(true);
 
-    const { data: profile } = await supabase.from("profiles").select("id").single();
-
     for (const student of students) {
       const record = records[student.id];
       if (!record?.level) continue;
@@ -134,7 +132,7 @@ export default function TeacherCocurricularPage() {
         student_id: student.id,
         activity_id: selectedActivity,
         academic_term_id: selectedTerm,
-        teacher_id: profile?.id,
+        teacher_id: userId,
         progress_level: record.level,
         achievements: record.achievements || null,
         notes: record.notes || null,

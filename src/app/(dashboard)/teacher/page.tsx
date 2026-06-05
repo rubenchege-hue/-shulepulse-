@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/lib/use-profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/ui/loading";
@@ -12,25 +13,21 @@ export default function TeacherDashboard() {
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const supabase = createClient();
+  const { userId } = useProfile();
 
   useEffect(() => {
+    if (!userId) return;
+
     async function loadStats() {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("school_id, id")
-        .single();
-
-      if (!profile) return;
-
       const { data: students } = await supabase
         .from("students")
-        .select("id, class_id, classes!inner(id, name)")
+        .select("id, status")
         .eq("status", "active");
 
       const { data: assessments } = await supabase
         .from("assessments")
         .select("id")
-        .eq("created_by", profile.id);
+        .eq("created_by", userId);
 
       setStats({
         totalStudents: students?.length || 0,
@@ -39,7 +36,7 @@ export default function TeacherDashboard() {
       setLoading(false);
     }
     loadStats();
-  }, [supabase]);
+  }, [userId, supabase]);
 
   if (loading) return <Loading size="lg" text="Loading dashboard..." />;
 

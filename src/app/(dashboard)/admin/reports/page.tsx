@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/lib/use-profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,8 +19,6 @@ import {
   Loader2,
   CheckCircle2,
   Clock,
-  AlertCircle,
-  ChevronRight,
   Sparkles,
 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
@@ -48,6 +47,7 @@ const templateColors: Record<string, "primary" | "secondary" | "purple"> = {
 
 export default function AdminReportsPage() {
   const supabase = createClient();
+  const { profile, schoolId, userId } = useProfile();
   const [reports, setReports] = useState<ReportWithDetails[]>([]);
   const [students, setStudents] = useState<any[]>([]);
   const [terms, setTerms] = useState<AcademicTerm[]>([]);
@@ -68,11 +68,7 @@ export default function AdminReportsPage() {
   const [genTemplate, setGenTemplate] = useState("combined");
 
   async function loadReports() {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("school_id")
-      .single();
-    if (!profile?.school_id) {
+    if (!schoolId) {
       setLoading(false);
       return;
     }
@@ -93,13 +89,13 @@ export default function AdminReportsPage() {
       supabase
         .from("students")
         .select("id, first_name, last_name, admission_number")
-        .eq("school_id", profile.school_id)
+        .eq("school_id", schoolId)
         .eq("status", "active")
         .order("first_name"),
       supabase
         .from("academic_terms")
         .select("*")
-        .eq("school_id", profile.school_id)
+        .eq("school_id", schoolId)
         .order("academic_year", { ascending: false }),
     ]);
 
@@ -110,8 +106,8 @@ export default function AdminReportsPage() {
   }
 
   useEffect(() => {
-    loadReports();
-  }, [supabase]);
+    if (schoolId) loadReports();
+  }, [schoolId, supabase]);
 
   const filtered = reports.filter((r) => {
     const studentName =
@@ -133,15 +129,10 @@ export default function AdminReportsPage() {
     setGenerating(true);
     setError(null);
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("id")
-      .single();
-
     const { error: err } = await supabase.from("reports").insert({
       student_id: genStudentId,
       academic_term_id: genTermId,
-      generated_by: profile?.id,
+      generated_by: profile?.id || userId,
       template_type: genTemplate,
       status: "draft",
       content: {} as Record<string, unknown>,

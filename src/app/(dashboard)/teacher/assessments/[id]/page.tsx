@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/lib/use-profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,7 @@ export default function AssessmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const supabase = createClient();
+  const { schoolId } = useProfile();
   const [assessment, setAssessment] = useState<any>(null);
   const [students, setStudents] = useState<any[]>([]);
   const [scores, setScores] = useState<Record<string, string>>({});
@@ -45,13 +47,12 @@ export default function AssessmentDetailPage() {
           .eq("status", "active")
           .order("first_name");
         if (data) studentsData = data;
-      } else {
-        // If no class filter, get all active students
-        const { data: profile } = await supabase.from("profiles").select("school_id").single();
+      } else if (schoolId) {
+        // If no class filter, get all active students in the school
         const { data } = await supabase
           .from("students")
           .select("id, first_name, last_name, admission_number")
-          .eq("school_id", profile?.school_id)
+          .eq("school_id", schoolId)
           .eq("status", "active")
           .order("first_name");
         if (data) studentsData = data;
@@ -77,7 +78,7 @@ export default function AssessmentDetailPage() {
       setLoading(false);
     }
     load();
-  }, [supabase, id]);
+  }, [supabase, id, schoolId]);
 
   const handleScoreChange = (studentId: string, value: string) => {
     setScores((prev) => ({ ...prev, [studentId]: value }));

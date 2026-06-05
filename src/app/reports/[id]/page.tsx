@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
   Printer,
+  Download,
   School,
   GraduationCap,
   Star,
@@ -79,6 +80,18 @@ export default function ReportPreviewPage() {
     load();
   }, [supabase, id]);
 
+  // Set document title for PDF filename
+  useEffect(() => {
+    if (report && content) {
+      const studentName = `${report.student?.first_name || ""} ${report.student?.last_name || ""}`.trim();
+      const termName = `${report.academic_term?.name || ""} ${report.academic_term?.academic_year || ""}`.trim();
+      document.title = `Report_Card_${studentName}_${termName}`.replace(/\s+/g, "_");
+    }
+    return () => {
+      document.title = "ShulePulse - School Management System";
+    };
+  }, [report, content]);
+
   const handlePrint = () => {
     window.print();
   };
@@ -134,12 +147,16 @@ export default function ReportPreviewPage() {
             Back
           </button>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-zinc-400 dark:text-zinc-500">
+            <span className="text-xs text-zinc-400 dark:text-zinc-500 hidden sm:inline">
               {report.status === "published" ? "Published" : "Draft"}
             </span>
-            <Button variant="outline" size="sm" onClick={handlePrint}>
+            <Button variant="outline" size="sm" onClick={handlePrint} title="Save as PDF (choose 'Save as PDF' in print dialog)">
+              <Download className="h-4 w-4" />
+              <span className="hidden sm:inline">Download PDF</span>
+            </Button>
+            <Button variant="default" size="sm" onClick={handlePrint}>
               <Printer className="h-4 w-4" />
-              Print
+              <span className="hidden sm:inline">Print</span>
             </Button>
           </div>
         </div>
@@ -214,7 +231,7 @@ export default function ReportPreviewPage() {
 
           {/* ===== ACADEMIC SCORES (8-4-4) ===== */}
           {is844 && content?.academic.subjects && content.academic.subjects.length > 0 && (
-            <div className="border-b border-zinc-200 px-8 py-6 dark:border-zinc-700">
+            <div className="report-section border-b border-zinc-200 px-8 py-6 dark:border-zinc-700">
               <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-zinc-900 dark:text-white">
                 <BookOpen className="h-5 w-5 text-blue-500" />
                 Academic Performance (8-4-4)
@@ -325,7 +342,7 @@ export default function ReportPreviewPage() {
 
           {/* ===== CBC COMPETENCIES ===== */}
           {isCombined && content?.cbc.subjects && content.cbc.subjects.length > 0 && (
-            <div className="border-b border-zinc-200 px-8 py-6 dark:border-zinc-700">
+            <div className="report-section border-b border-zinc-200 px-8 py-6 dark:border-zinc-700">
               <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-zinc-900 dark:text-white">
                 <Sparkles className="h-5 w-5 text-emerald-500" />
                 CBC Competency Ratings
@@ -395,7 +412,7 @@ export default function ReportPreviewPage() {
 
           {/* ===== CO-CURRICULAR ===== */}
           {content?.cocurricular.activities && content.cocurricular.activities.length > 0 && (
-            <div className="border-b border-zinc-200 px-8 py-6 dark:border-zinc-700">
+            <div className="report-section border-b border-zinc-200 px-8 py-6 dark:border-zinc-700">
               <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-zinc-900 dark:text-white">
                 <Trophy className="h-5 w-5 text-amber-500" />
                 Co-Curricular Activities
@@ -438,7 +455,7 @@ export default function ReportPreviewPage() {
 
           {/* ===== SUMMARY ===== */}
           {content?.summary && (
-            <div className="px-8 py-6">
+            <div className="report-section px-8 py-6">
               <h2 className="mb-4 text-lg font-bold text-zinc-900 dark:text-white">
                 Summary
               </h2>

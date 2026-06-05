@@ -2,16 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/lib/use-profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/ui/loading";
 import { Save, Loader2, School, CheckCircle2 } from "lucide-react";
-import { formatDate, getCbcRatingLabel } from "@/lib/utils";
+import { getCbcRatingLabel } from "@/lib/utils";
 
 export default function TeacherCbcPage() {
   const supabase = createClient();
+  const { schoolId, userId } = useProfile();
   const [students, setStudents] = useState<any[]>([]);
   const [subjects, setSubjects] = useState<any[]>([]);
   const [strands, setStrands] = useState<any[]>([]);
@@ -31,15 +33,15 @@ export default function TeacherCbcPage() {
   const [savedRecords, setSavedRecords] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    if (!schoolId) { setLoading(false); return; }
+
     async function load() {
-      const { data: profile } = await supabase.from("profiles").select("school_id").single();
-      if (!profile?.school_id) { setLoading(false); return; }
 
       const [studentsRes, subjectsRes, strandsRes, termsRes] = await Promise.all([
-        supabase.from("students").select("id, first_name, last_name, admission_number").eq("school_id", profile.school_id).eq("status", "active").order("first_name"),
-        supabase.from("subjects").select("id, name, code").eq("school_id", profile.school_id).eq("curriculum_type", "cbc").order("name"),
-        supabase.from("cbc_strands").select("id, name, subject_id").eq("school_id", profile.school_id).order("name"),
-        supabase.from("academic_terms").select("id, name, academic_year, is_current").eq("school_id", profile.school_id).order("academic_year", { ascending: false }),
+        supabase.from("students").select("id, first_name, last_name, admission_number").eq("school_id", schoolId).eq("status", "active").order("first_name"),
+        supabase.from("subjects").select("id, name, code").eq("school_id", schoolId).eq("curriculum_type", "cbc").order("name"),
+        supabase.from("cbc_strands").select("id, name, subject_id").eq("school_id", schoolId).order("name"),
+        supabase.from("academic_terms").select("id, name, academic_year, is_current").eq("school_id", schoolId).order("academic_year", { ascending: false }),
       ]);
 
       if (studentsRes.data) setStudents(studentsRes.data);
@@ -118,8 +120,6 @@ export default function TeacherCbcPage() {
     if (!selectedSubStrand || !selectedTerm) return;
     setSaving(true);
 
-    const { data: profile } = await supabase.from("profiles").select("id").single();
-
     for (const student of students) {
       const rating = ratings[student.id];
       if (!rating) continue;
@@ -128,7 +128,7 @@ export default function TeacherCbcPage() {
         student_id: student.id,
         sub_strand_id: selectedSubStrand,
         academic_term_id: selectedTerm,
-        teacher_id: profile?.id,
+        teacher_id: userId,
         rating,
         notes: notes[student.id] || null,
         date: new Date().toISOString().split("T")[0],

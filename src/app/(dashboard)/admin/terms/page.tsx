@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useProfile } from "@/lib/use-profile";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import type { AcademicTerm } from "@/lib/types/database";
 
 export default function AdminTermsPage() {
   const supabase = createClient();
+  const { schoolId } = useProfile();
   const [terms, setTerms] = useState<AcademicTerm[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,13 +28,12 @@ export default function AdminTermsPage() {
   });
 
   async function loadTerms() {
-    const { data: profile } = await supabase.from("profiles").select("school_id").single();
-    if (!profile?.school_id) { setLoading(false); return; }
+    if (!schoolId) { setLoading(false); return; }
 
     const { data } = await supabase
       .from("academic_terms")
       .select("*")
-      .eq("school_id", profile.school_id)
+      .eq("school_id", schoolId)
       .order("academic_year", { ascending: false })
       .order("name", { ascending: false });
     if (data) setTerms(data);
@@ -51,11 +52,10 @@ export default function AdminTermsPage() {
     setSaving(true);
     setError(null);
 
-    const { data: profile } = await supabase.from("profiles").select("school_id").single();
-    if (!profile?.school_id) { setSaving(false); return; }
+    if (!schoolId) { setSaving(false); return; }
 
     const { error: err } = await supabase.from("academic_terms").insert({
-      school_id: profile.school_id,
+      school_id: schoolId,
       name: newTerm.name,
       academic_year: newTerm.academic_year,
       start_date: newTerm.start_date,
@@ -75,14 +75,13 @@ export default function AdminTermsPage() {
 
   const handleSetCurrent = async (termId: string) => {
     setSaving(true);
-    const { data: profile } = await supabase.from("profiles").select("school_id").single();
-    if (!profile?.school_id) { setSaving(false); return; }
+    if (!schoolId) { setSaving(false); return; }
 
     // Unset all terms for this school, then set the selected one
     await supabase
       .from("academic_terms")
       .update({ is_current: false })
-      .eq("school_id", profile.school_id);
+      .eq("school_id", schoolId);
 
     await supabase
       .from("academic_terms")
