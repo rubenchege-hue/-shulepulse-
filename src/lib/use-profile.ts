@@ -23,7 +23,7 @@ export function useProfile() {
         .from("profiles")
         .select("*")
         .eq("id", devUser.id)
-        .single();
+        .maybeSingle();
 
       if (data) {
         setProfile(data as Profile);

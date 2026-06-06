@@ -80,7 +80,7 @@ export function DevAuthProvider({ children }: { children: ReactNode }) {
         .select("id")
         .eq("role", "teacher")
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (data?.id) {
         userId = data.id;
@@ -97,7 +97,7 @@ export function DevAuthProvider({ children }: { children: ReactNode }) {
       .from("schools")
       .select("id, name")
       .limit(1)
-      .single();
+      .maybeSingle();
 
     const devUser: DevUser = {
       id: userId,
