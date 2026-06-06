@@ -57,6 +57,7 @@ export interface Class {
   section: string | null;
   curriculum_type: CurriculumType;
   academic_term_id: string | null;
+  teacher_id: string | null;
   capacity: number;
   created_at: string;
 }

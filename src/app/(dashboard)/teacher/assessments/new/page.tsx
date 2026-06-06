@@ -32,21 +32,29 @@ export default function NewAssessmentPage() {
   });
 
   useEffect(() => {
-    if (!schoolId) return;
+    if (!schoolId || !profile) return;
+    const p = profile;
 
     async function load() {
-      const [classesRes, subjectsRes, termsRes] = await Promise.all([
-        supabase.from("classes").select("*").eq("school_id", schoolId).order("name"),
+      // Get classes assigned to this teacher
+      const { data: myClasses } = await supabase
+        .from("classes")
+        .select("*")
+        .eq("school_id", schoolId)
+        .eq("teacher_id", p.id)
+        .order("name");
+
+      const [subjectsRes, termsRes] = await Promise.all([
         supabase.from("subjects").select("*").eq("school_id", schoolId).eq("category", "academic").order("name"),
         supabase.from("academic_terms").select("*").eq("school_id", schoolId).order("academic_year", { ascending: false }),
       ]);
 
-      if (classesRes.data) setClasses(classesRes.data);
+      if (myClasses) setClasses(myClasses);
       if (subjectsRes.data) setSubjects(subjectsRes.data);
       if (termsRes.data) setTerms(termsRes.data);
     }
     load();
-  }, [schoolId, supabase]);
+  }, [schoolId, profile?.id, supabase]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

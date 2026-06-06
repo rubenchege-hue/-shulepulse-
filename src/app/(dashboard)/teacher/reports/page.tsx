@@ -80,14 +80,24 @@ export default function TeacherReportsPage() {
 
     if (data) setReports(data as unknown as ReportWithDetails[]);
 
-    // Load students and terms for generate form
+    // Get teacher's assigned class IDs
+    const { data: myClasses } = await supabase
+      .from("classes")
+      .select("id")
+      .eq("school_id", schoolId)
+      .eq("teacher_id", pid);
+    const classIds = myClasses?.map((c) => c.id) || [];
+
+    // Load students in assigned classes and terms for generate form
     const [studentsRes, termsRes] = await Promise.all([
-      supabase
-        .from("students")
-        .select("id, first_name, last_name, admission_number, classes!left(name, section)")
-        .eq("school_id", schoolId)
-        .eq("status", "active")
-        .order("first_name"),
+      classIds.length > 0
+        ? supabase
+            .from("students")
+            .select("id, first_name, last_name, admission_number, classes!left(name, section)")
+            .in("class_id", classIds)
+            .eq("status", "active")
+            .order("first_name")
+        : Promise.resolve({ data: [], error: null }),
       supabase
         .from("academic_terms")
         .select("*")

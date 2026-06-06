@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/ui/loading";
-import { Plus, GraduationCap } from "lucide-react";
+import { Plus, GraduationCap, User } from "lucide-react";
 import type { Class } from "@/lib/types/database";
 
 export default function AdminClassesPage() {
@@ -22,8 +22,12 @@ export default function AdminClassesPage() {
   const { schoolId } = useProfile();
 
   async function loadClasses() {
-    const { data } = await supabase.from("classes").select("*").order("name");
-    if (data) setClasses(data);
+    // Fetch classes with their assigned teacher
+    const { data } = await supabase
+      .from("classes")
+      .select("*, teacher:profiles!teacher_id(first_name, last_name)")
+      .order("name");
+    if (data) setClasses(data as any);
 
     // Get student counts per class
     const { data: students } = await supabase.from("students").select("class_id");
@@ -137,7 +141,16 @@ export default function AdminClassesPage() {
                   {cls.curriculum_type}
                 </Badge>
               </div>
-              <div className="mt-4 flex items-center justify-between text-sm">
+              {/* Assigned teacher */}
+              {(cls as any).teacher && (
+                <div className="mt-3 flex items-center gap-2 text-sm">
+                  <User className="h-3.5 w-3.5 text-zinc-400" />
+                  <span className="text-zinc-600 dark:text-zinc-400">
+                    {(cls as any).teacher.first_name} {(cls as any).teacher.last_name}
+                  </span>
+                </div>
+              )}
+              <div className="mt-3 flex items-center justify-between text-sm">
                 <span className="text-zinc-500">
                   {studentCounts[cls.id] || 0} / {cls.capacity} students
                 </span>

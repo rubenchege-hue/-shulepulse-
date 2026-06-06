@@ -33,12 +33,21 @@ export default function TeacherCbcPage() {
   const [savedRecords, setSavedRecords] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!schoolId) { setLoading(false); return; }
+    if (!schoolId || !userId) { setLoading(false); return; }
 
     async function load() {
+      // Get teacher's assigned class IDs
+      const { data: myClasses } = await supabase
+        .from("classes")
+        .select("id")
+        .eq("school_id", schoolId)
+        .eq("teacher_id", userId);
+      const classIds = myClasses?.map((c) => c.id) || [];
 
       const [studentsRes, subjectsRes, strandsRes, termsRes] = await Promise.all([
-        supabase.from("students").select("id, first_name, last_name, admission_number").eq("school_id", schoolId).eq("status", "active").order("first_name"),
+        classIds.length > 0
+          ? supabase.from("students").select("id, first_name, last_name, admission_number").in("class_id", classIds).eq("status", "active").order("first_name")
+          : Promise.resolve({ data: [], error: null }),
         supabase.from("subjects").select("id, name, code").eq("school_id", schoolId).eq("curriculum_type", "cbc").order("name"),
         supabase.from("cbc_strands").select("id, name, subject_id").eq("school_id", schoolId).order("name"),
         supabase.from("academic_terms").select("id, name, academic_year, is_current").eq("school_id", schoolId).order("academic_year", { ascending: false }),

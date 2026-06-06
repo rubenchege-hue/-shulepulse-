@@ -18,6 +18,8 @@ import {
   X,
   Star,
   UserCheck,
+  Pencil,
+  Power,
 } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 import type { Profile, Student, StudentParent } from "@/lib/types/database";
@@ -39,6 +41,26 @@ export default function AdminParentsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
+
+  // Add parent modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addSaving, setAddSaving] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
+  const [addForm, setAddForm] = useState({
+    first_name: "",
+    last_name: "",
+    phone: "",
+  });
+
+  // Edit parent modal state
+  const [editingParent, setEditingParent] = useState<Profile | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    first_name: "",
+    last_name: "",
+    phone: "",
+  });
 
   // Link modal state
   const [linkModal, setLinkModal] = useState<{
@@ -173,6 +195,95 @@ export default function AdminParentsPage() {
     loadData();
   };
 
+  const handleOpenAddModal = () => {
+    setAddForm({ first_name: "", last_name: "", phone: "" });
+    setAddError(null);
+    setShowAddModal(true);
+  };
+
+  const handleAddParent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAddSaving(true);
+    setAddError(null);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("school_id")
+      .single();
+
+    if (!profile?.school_id) {
+      setAddError("Could not determine your school. Please log in again.");
+      setAddSaving(false);
+      return;
+    }
+
+    const { error: err } = await supabase.from("profiles").insert({
+      id: crypto.randomUUID(),
+      school_id: profile.school_id,
+      role: "parent",
+      first_name: addForm.first_name,
+      last_name: addForm.last_name,
+      phone: addForm.phone || null,
+      is_active: true,
+    });
+
+    if (err) {
+      setAddError(err.message);
+      setAddSaving(false);
+      return;
+    }
+
+    setShowAddModal(false);
+    setAddSaving(false);
+    loadData();
+  };
+
+  const handleOpenEdit = (parent: Profile) => {
+    setEditForm({
+      first_name: parent.first_name,
+      last_name: parent.last_name,
+      phone: parent.phone || "",
+    });
+    setEditError(null);
+    setEditingParent(parent);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingParent) return;
+    setEditSaving(true);
+    setEditError(null);
+
+    const { error: err } = await supabase
+      .from("profiles")
+      .update({
+        first_name: editForm.first_name,
+        last_name: editForm.last_name,
+        phone: editForm.phone || null,
+        is_active: editingParent.is_active,
+      })
+      .eq("id", editingParent.id);
+
+    if (err) {
+      setEditError(err.message);
+      setEditSaving(false);
+      return;
+    }
+
+    setEditingParent(null);
+    setEditSaving(false);
+    loadData();
+  };
+
+  const handleToggleActive = async (parent: Profile) => {
+    const { error: err } = await supabase
+      .from("profiles")
+      .update({ is_active: !parent.is_active })
+      .eq("id", parent.id);
+
+    if (!err) loadData();
+  };
+
   const handleUpdateRelationship = async (
     parentId: string,
     studentId: string,
@@ -235,6 +346,10 @@ export default function AdminParentsPage() {
             children
           </p>
         </div>
+        <Button onClick={handleOpenAddModal}>
+          <UserPlus className="h-4 w-4" />
+          Add Parent
+        </Button>
       </div>
 
       {/* Stats */}
@@ -285,9 +400,15 @@ export default function AdminParentsPage() {
             <h3 className="mt-4 text-lg font-semibold">No parents found</h3>
             <p className="mt-2 text-sm text-zinc-500 max-w-sm mx-auto">
               {parents.length === 0
-                ? "Parent accounts will appear here once they register. Encourage parents to create accounts using the registration page."
+                ? "Add parents to the system and link them to students so they can track their children&apos;s progress."
                 : "Try adjusting your search."}
             </p>
+            {parents.length === 0 && (
+              <Button onClick={handleOpenAddModal} className="mt-4">
+                <UserPlus className="h-4 w-4" />
+                Add Parent
+              </Button>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -314,6 +435,24 @@ export default function AdminParentsPage() {
                     <Badge variant={parent.is_active ? "success" : "warning"}>
                       {parent.is_active ? "Active" : "Inactive"}
                     </Badge>
+                    <button
+                      onClick={() => handleOpenEdit(parent)}
+                      className="rounded-md p-2 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 transition-colors"
+                      title="Edit parent"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleToggleActive(parent)}
+                      className={`rounded-md p-2 transition-colors ${
+                        parent.is_active
+                          ? "text-emerald-500 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+                          : "text-zinc-300 hover:bg-emerald-50 hover:text-emerald-500 dark:hover:bg-emerald-900/20 dark:text-zinc-600"
+                      }`}
+                      title={parent.is_active ? "Deactivate parent" : "Activate parent"}
+                    >
+                      <Power className="h-4 w-4" />
+                    </button>
                     <Button
                       variant="outline"
                       size="sm"
@@ -421,6 +560,194 @@ export default function AdminParentsPage() {
               </CardContent>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Add Parent Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>Add Parent / Guardian</CardTitle>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="rounded-lg p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleAddParent} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    First Name
+                  </label>
+                  <Input
+                    required
+                    value={addForm.first_name}
+                    onChange={(e) =>
+                      setAddForm({ ...addForm, first_name: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Last Name
+                  </label>
+                  <Input
+                    required
+                    value={addForm.last_name}
+                    onChange={(e) =>
+                      setAddForm({ ...addForm, last_name: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Phone (optional)
+                  </label>
+                  <Input
+                    type="tel"
+                    placeholder="+254 7XX XXX XXX"
+                    value={addForm.phone}
+                    onChange={(e) =>
+                      setAddForm({ ...addForm, phone: e.target.value })
+                    }
+                  />
+                </div>
+                {addError && (
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    {addError}
+                  </p>
+                )}
+                <div className="flex gap-3 pt-2">
+                  <Button type="submit" disabled={addSaving}>
+                    {addSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Adding...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-4 w-4" />
+                        Add Parent
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowAddModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Edit Parent Modal */}
+      {editingParent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle>
+                Edit {editingParent.first_name} {editingParent.last_name}
+              </CardTitle>
+              <button
+                onClick={() => setEditingParent(null)}
+                className="rounded-lg p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    First Name
+                  </label>
+                  <Input
+                    required
+                    value={editForm.first_name}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, first_name: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Last Name
+                  </label>
+                  <Input
+                    required
+                    value={editForm.last_name}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, last_name: e.target.value })
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">
+                    Phone (optional)
+                  </label>
+                  <Input
+                    type="tel"
+                    placeholder="+254 7XX XXX XXX"
+                    value={editForm.phone}
+                    onChange={(e) =>
+                      setEditForm({ ...editForm, phone: e.target.value })
+                    }
+                  />
+                </div>
+                <div className="flex items-center gap-3 pt-2 pb-2">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editingParent.is_active}
+                      onChange={() => {
+                        setEditingParent({
+                          ...editingParent,
+                          is_active: !editingParent.is_active,
+                        });
+                      }}
+                      className="h-4 w-4 rounded border-zinc-300 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <span className="text-sm font-medium">Active</span>
+                  </label>
+                </div>
+                {editError && (
+                  <p className="text-sm text-red-600 dark:text-red-400">
+                    {editError}
+                  </p>
+                )}
+                <div className="flex gap-3 pt-2">
+                  <Button type="submit" disabled={editSaving}>
+                    {editSaving ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Pencil className="h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setEditingParent(null)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         </div>
       )}
 

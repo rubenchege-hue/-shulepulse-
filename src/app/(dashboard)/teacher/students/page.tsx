@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/ui/loading";
 import { Search, ChevronRight, GraduationCap } from "lucide-react";
 import { getInitials } from "@/lib/utils";
+import { useProfile } from "@/lib/use-profile";
 import type { Student, Class } from "@/lib/types/database";
 
 export default function TeacherStudentsPage() {
@@ -18,26 +19,41 @@ export default function TeacherStudentsPage() {
   const [search, setSearch] = useState("");
   const [classFilter, setClassFilter] = useState("");
   const supabase = createClient();
+  const { userId } = useProfile();
 
   useEffect(() => {
-    async function load() {
-      const { data: studentsData } = await supabase
-        .from("students")
-        .select("*, classes(*)")
-        .eq("status", "active")
-        .order("first_name");
-      if (studentsData) setStudents(studentsData as any);
+    if (!userId) return;
 
+    async function load() {
+      const { data: myClasses } = await supabase
+        .from("classes")
+        .select("id")
+        .eq("teacher_id", userId);
+      const classIds = myClasses?.map((c) => c.id) || [];
+
+      // Load assigned classes for the filter dropdown
       const { data: classesData } = await supabase
         .from("classes")
         .select("*")
+        .in("id", classIds)
         .order("name");
       if (classesData) setClasses(classesData);
+
+      // Load students in those classes
+      if (classIds.length > 0) {
+        const { data: studentsData } = await supabase
+          .from("students")
+          .select("*, classes(*)")
+          .in("class_id", classIds)
+          .eq("status", "active")
+          .order("first_name");
+        if (studentsData) setStudents(studentsData as any);
+      }
 
       setLoading(false);
     }
     load();
-  }, [supabase]);
+  }, [userId, supabase]);
 
   const filtered = students.filter((s) => {
     const matchesSearch =

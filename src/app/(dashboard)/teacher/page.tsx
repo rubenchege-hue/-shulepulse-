@@ -19,10 +19,22 @@ export default function TeacherDashboard() {
     if (!userId) return;
 
     async function loadStats() {
-      const { data: students } = await supabase
-        .from("students")
-        .select("id, status")
-        .eq("status", "active");
+      // Get teacher's assigned classes
+      const { data: myClasses } = await supabase
+        .from("classes")
+        .select("id")
+        .eq("teacher_id", userId);
+      const classIds = myClasses?.map((c) => c.id) || [];
+
+      let totalStudents = 0;
+      if (classIds.length > 0) {
+        const { data: students } = await supabase
+          .from("students")
+          .select("id")
+          .in("class_id", classIds)
+          .eq("status", "active");
+        totalStudents = students?.length || 0;
+      }
 
       const { data: assessments } = await supabase
         .from("assessments")
@@ -30,7 +42,7 @@ export default function TeacherDashboard() {
         .eq("created_by", userId);
 
       setStats({
-        totalStudents: students?.length || 0,
+        totalStudents,
         totalAssessments: assessments?.length || 0,
       });
       setLoading(false);

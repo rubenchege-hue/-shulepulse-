@@ -46,11 +46,21 @@ export default function TeacherCocurricularPage() {
   const [savedRecords, setSavedRecords] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!schoolId) { setLoading(false); return; }
+    if (!schoolId || !userId) { setLoading(false); return; }
 
     async function load() {
+      // Get teacher's assigned class IDs
+      const { data: myClasses } = await supabase
+        .from("classes")
+        .select("id")
+        .eq("school_id", schoolId)
+        .eq("teacher_id", userId);
+      const classIds = myClasses?.map((c) => c.id) || [];
+
       const [studentsRes, activitiesRes, termsRes] = await Promise.all([
-        supabase.from("students").select("id, first_name, last_name, admission_number").eq("school_id", schoolId).eq("status", "active").order("first_name"),
+        classIds.length > 0
+          ? supabase.from("students").select("id, first_name, last_name, admission_number").in("class_id", classIds).eq("status", "active").order("first_name")
+          : Promise.resolve({ data: [], error: null }),
         supabase.from("co_curricular_activities").select("*").eq("school_id", schoolId).eq("is_active", true).order("name"),
         supabase.from("academic_terms").select("*").eq("school_id", schoolId).order("academic_year", { ascending: false }),
       ]);
@@ -66,7 +76,7 @@ export default function TeacherCocurricularPage() {
       setLoading(false);
     }
     load();
-  }, [schoolId, supabase]);
+  }, [schoolId, userId, supabase]);
 
   const handleLoadExisting = async () => {
     if (!selectedActivity || !selectedTerm) return;

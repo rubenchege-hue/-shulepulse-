@@ -91,18 +91,20 @@ export default function TeacherAttendancePage() {
     async function load() {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("school_id")
+        .select("id, school_id")
         .single();
 
-      if (!profile?.school_id) {
+      if (!profile?.school_id || !profile?.id) {
         setLoading(false);
         return;
       }
 
+      // Only show classes assigned to this teacher
       const { data: classesData } = await supabase
         .from("classes")
         .select("*")
         .eq("school_id", profile.school_id)
+        .eq("teacher_id", profile.id)
         .order("name");
 
       if (classesData) setClasses(classesData);
