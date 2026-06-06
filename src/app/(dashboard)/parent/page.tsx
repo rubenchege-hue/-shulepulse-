@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useDevAuth } from "@/lib/dev-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/ui/loading";
@@ -15,14 +16,14 @@ interface ChildWithClass extends Student {
 }
 
 export default function ParentDashboard() {
+  const { user: devUser } = useDevAuth();
   const [children, setChildren] = useState<ChildWithClass[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     async function loadChildren() {
-      const { data: { user } } = await supabase.auth.getUser();
-      const parentId = user?.id ?? '00000000-0000-0000-0000-000000000001';
+      const supabase = createClient();
+      const parentId = devUser?.id ?? '00000000-0000-0000-0000-000000000001';
 
       const { data: links } = await supabase
         .from("student_parents")
@@ -44,7 +45,7 @@ export default function ParentDashboard() {
       setLoading(false);
     }
     loadChildren();
-  }, [supabase]);
+  }, [devUser]);
 
   if (loading) return <Loading size="lg" text="Loading your dashboard..." />;
 

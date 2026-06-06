@@ -18,6 +18,7 @@ export function useProfile() {
     }
 
     async function fetchProfile() {
+      if (!devUser) return;
       const { data } = await supabase
         .from("profiles")
         .select("*")

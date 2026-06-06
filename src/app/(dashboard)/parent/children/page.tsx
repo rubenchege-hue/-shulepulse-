@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useDevAuth } from "@/lib/dev-auth";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/ui/loading";
@@ -25,15 +26,15 @@ interface ChildWithClass extends Student {
 }
 
 export default function ParentChildrenPage() {
+  const { user: devUser } = useDevAuth();
   const [children, setChildren] = useState<ChildWithClass[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const supabase = createClient();
 
   useEffect(() => {
     async function loadChildren() {
-      const { data: { user } } = await supabase.auth.getUser();
-      const parentId = user?.id ?? '00000000-0000-0000-0000-000000000001';
+      const supabase = createClient();
+      const parentId = devUser?.id ?? '00000000-0000-0000-0000-000000000001';
 
       const { data: links } = await supabase
         .from("student_parents")
@@ -56,7 +57,7 @@ export default function ParentChildrenPage() {
       setLoading(false);
     }
     loadChildren();
-  }, [supabase]);
+  }, [devUser]);
 
   const filtered = children.filter((child) => {
     const name =

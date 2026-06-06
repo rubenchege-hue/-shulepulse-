@@ -57,6 +57,37 @@ DECLARE
   _s10 UUID := gen_random_uuid();
   _s11 UUID := gen_random_uuid();
   _s12 UUID := gen_random_uuid();
+  _s13 UUID := gen_random_uuid();
+  _s14 UUID := gen_random_uuid();
+  _s15 UUID := gen_random_uuid();
+  _s16 UUID := gen_random_uuid();
+  _s17 UUID := gen_random_uuid();
+  _s18 UUID := gen_random_uuid();
+  _s19 UUID := gen_random_uuid();
+  _s20 UUID := gen_random_uuid();
+  _s21 UUID := gen_random_uuid();
+  _s22 UUID := gen_random_uuid();
+
+  -- Additional Assessments
+  _amg1_mid UUID := gen_random_uuid();
+  _akg1     UUID := gen_random_uuid();
+  _amg1w    UUID := gen_random_uuid();
+  _aeg1w    UUID := gen_random_uuid();
+  _akg1w    UUID := gen_random_uuid();
+  _amg2     UUID := gen_random_uuid();
+  _aeg2     UUID := gen_random_uuid();
+  _asg2     UUID := gen_random_uuid();
+  _amg3_e   UUID := gen_random_uuid();
+  _aeg3_e   UUID := gen_random_uuid();
+  _amg4     UUID := gen_random_uuid();
+  _aeg4     UUID := gen_random_uuid();
+  _asg4     UUID := gen_random_uuid();
+  _akh1     UUID := gen_random_uuid();
+  _ahh1     UUID := gen_random_uuid();
+  _ach1     UUID := gen_random_uuid();
+  _amf2     UUID := gen_random_uuid();
+  _aef2     UUID := gen_random_uuid();
+  _abf2     UUID := gen_random_uuid();
 
   -- Activities
   _af  UUID := gen_random_uuid();
@@ -217,7 +248,23 @@ BEGIN
     (_s9,  _school_id, 'MEC/2025/009', 'Kevin',   'Otieno',    '2016-08-12', 'male',   _g3,  '2025-01-13', 'active'),
     (_s10, _school_id, 'MEC/2025/010', 'Grace',   'Njoki',     '2009-05-03', 'female', _f1,  '2025-01-13', 'active'),
     (_s11, _school_id, 'MEC/2025/011', 'Samuel',  'Kiprop',    '2009-12-19', 'male',   _f1,  '2025-01-13', 'active'),
-    (_s12, _school_id, 'MEC/2025/012', 'Cynthia', 'Wambui',    '2008-04-07', 'female', _f2,  '2025-01-13', 'active');
+    (_s12, _school_id, 'MEC/2025/012', 'Cynthia', 'Wambui',    '2008-04-07', 'female', _f2,  '2025-01-13', 'active'),
+    -- Grade 1 West (2 more)
+    (_s13, _school_id, 'MEC/2025/013', 'Daniel',  'Mutua',     '2018-10-02', 'male',   _g1w, '2025-01-13', 'active'),
+    (_s14, _school_id, 'MEC/2025/014', 'Aisha',   'Hassan',    '2018-12-15', 'female', _g1w, '2025-01-13', 'active'),
+    -- Grade 2 (2 more)
+    (_s15, _school_id, 'MEC/2025/015', 'John',    'Kiprono',   '2017-05-08', 'male',   _g2,  '2025-01-13', 'active'),
+    (_s16, _school_id, 'MEC/2025/016', 'Nancy',   'Wangeci',   '2017-10-30', 'female', _g2,  '2025-01-13', 'active'),
+    -- Grade 3 (2 more)
+    (_s17, _school_id, 'MEC/2025/017', 'Patrick', 'Omondi',    '2016-03-17', 'male',   _g3,  '2025-01-13', 'active'),
+    (_s18, _school_id, 'MEC/2025/018', 'Diana',   'Chepkoech', '2016-09-22', 'female', _g3,  '2025-01-13', 'active'),
+    -- Grade 4 (2 new)
+    (_s19, _school_id, 'MEC/2025/019', 'Michael', 'Njenga',    '2015-02-11', 'male',   _g4,  '2025-01-13', 'active'),
+    (_s20, _school_id, 'MEC/2025/020', 'Susan',   'Akinyi',    '2015-07-25', 'female', _g4,  '2025-01-13', 'active'),
+    -- Form 1 (1 more)
+    (_s21, _school_id, 'MEC/2025/021', 'Joseph',  'Njoroge',   '2009-11-03', 'male',   _f1,  '2025-01-13', 'active'),
+    -- Form 2 (1 more)
+    (_s22, _school_id, 'MEC/2025/022', 'Martha',  'Kendi',     '2008-08-19', 'female', _f2,  '2025-01-13', 'active');
 
   -- ============================================================
   -- 9. STUDENT-PARENT LINKS (after students are inserted)

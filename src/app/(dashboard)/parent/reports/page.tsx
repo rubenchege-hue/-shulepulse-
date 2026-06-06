@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useDevAuth } from "@/lib/dev-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,14 +35,14 @@ interface ChildReport {
 }
 
 export default function ParentReportsPage() {
+  const { user: devUser } = useDevAuth();
   const [childrenReports, setChildrenReports] = useState<ChildReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      const parentId = user?.id ?? '00000000-0000-0000-0000-000000000001';
+      const supabase = createClient();
+      const parentId = devUser?.id ?? '00000000-0000-0000-0000-000000000001';
 
       // Get linked children
       const { data: links } = await supabase
@@ -105,7 +106,7 @@ export default function ParentReportsPage() {
       setLoading(false);
     }
     load();
-  }, [supabase]);
+  }, [devUser]);
 
   // Count stats
   const totalReports = childrenReports.reduce((sum, c) => sum + c.reports.length, 0);

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { useDevAuth } from "@/lib/dev-auth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Loading } from "@/components/ui/loading";
@@ -38,14 +39,14 @@ interface ChildAcademic {
 }
 
 export default function ParentAcademicPage() {
+  const { user: devUser } = useDevAuth();
   const [childrenAcademics, setChildrenAcademics] = useState<ChildAcademic[]>([]);
   const [loading, setLoading] = useState(true);
-  const supabase = createClient();
 
   useEffect(() => {
     async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      const parentId = user?.id ?? '00000000-0000-0000-0000-000000000001';
+      const supabase = createClient();
+      const parentId = devUser?.id ?? '00000000-0000-0000-0000-000000000001';
 
       // Get linked children
       const { data: links } = await supabase
@@ -152,7 +153,7 @@ export default function ParentAcademicPage() {
       setLoading(false);
     }
     load();
-  }, [supabase]);
+  }, [devUser]);
 
   if (loading) return <Loading size="lg" text="Loading academic records..." />;
 
